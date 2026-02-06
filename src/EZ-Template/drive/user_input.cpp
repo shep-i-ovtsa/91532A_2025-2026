@@ -321,7 +321,7 @@ void Drive::opcontrol_arcade_standard(e_type stick_type) {
   if (stick_type == SPLIT) {
     // Put the joysticks through the curve function
     fwd_stick = opcontrol_curve_left(clipped_joystick(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)));
-    turn_stick = opcontrol_curve_right(clipped_joystick(master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X)));
+    turn_stick = opcontrol_curve_right(clipped_joystick(-master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X)));
   } else if (stick_type == SINGLE) {
     // Put the joysticks through the curve function
     fwd_stick = opcontrol_curve_left(clipped_joystick(master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)));

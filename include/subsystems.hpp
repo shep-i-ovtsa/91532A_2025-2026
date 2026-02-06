@@ -9,8 +9,8 @@
 extern Drive chassis;
 
 // Your motors, sensors, etc. should go here.  Below are examples
-inline pros::Motor forward_intake(12);
-inline pros::Motor back_roller(11);
+inline pros::Motor forward_intake(10);
+inline pros::Motor back_roller(9);
 inline pros::adi::Pneumatics hammerHead('A', false);
 inline pros::adi::Pneumatics Descore('B', false);
 inline pros::Imu imu_sensor(4);
