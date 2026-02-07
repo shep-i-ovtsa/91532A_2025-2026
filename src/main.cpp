@@ -6,10 +6,6 @@
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"
 #include "subsystems.hpp"
-bool global_lock_descore = false;
-bool confirmed_teleop = false;
-bool timer_pause = true;
-int match_time = 105;
 
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
@@ -96,8 +92,6 @@ void initialize() {
   chassis.imu.reset();
   chassis.initialize();
   ez::as::initialize();
-  pros::Task escapeHatchTask(escape_hatch);
-  pros::Task timerDisplayTask(timer_display);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
 }
 
@@ -140,7 +134,6 @@ void autonomous() {
   chassis.drive_sensor_reset();               // Reset drive sensors to 0
   chassis.odom_xyt_set(0_in, 0_in, 0_deg);    // Set the current position, you can start at a specific position with this
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
-  confirmed_teleop = false;
   /*
   Odometry and Pure Pursuit are not magic
 
@@ -156,36 +149,6 @@ void autonomous() {
 
   ez::as::auton_selector.selected_auton_call();  // Calls selected auton from autonomous selector
 }
-
-void escape_hatch(void* param){
-      while(true){
-        if(confirmed_teleop){
-          if(pros::competition::is_field_control()){
-            match_time--;
-          } else if(match_time){
-            match_time--;
-          }
-          pros::delay(989);
-          if(!pros::competition::is_disabled()){
-            if(match_time < 1){
-              global_lock_descore = true;
-              Descore.set_value(true);
-            }
-          } else {
-            break;
-        }
-        master.print(1, 1, "TIME LEFT: %d", match_time);
-        pros::delay(10);
-      }
-    }
-  }
-
-  void timer_display(){
-    while(true){
-      master.print(1, 1, "TIME LEFT - R1 + L1 to pause: %d", match_time);
-      pros::delay(100);
-    }
-  }
 
 
 /**
@@ -303,7 +266,6 @@ void opcontrol() {
   double acceleration = 0.0;
 
   while (true) {  
-    confirmed_teleop = true;
 
     // Gives you some extras to make EZ-Template ezier
     ez_template_extras();
@@ -325,14 +287,13 @@ void opcontrol() {
     if(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
       lower = false;
     }
-    if(!global_lock_descore){
       if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)){
         descore_toggle = true;
       }
       if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)){
         descore_toggle = false;
       }
-    }
+    
     if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
       forward_intake.move_velocity(180);
     } else if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)){
@@ -351,9 +312,7 @@ void opcontrol() {
     double pitch = chassis.imu.get_pitch();
     double accel_gs = chassis.imu.get_accel().z;
 
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)&&master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
-      timer_pause = !timer_pause;
-    }
+
 
 float g_norm = clamp(accel_gs / 1.0, 0.0, 1.0); //yes
 float tip_threshold = 40.0 - 11.5 * g_norm;
