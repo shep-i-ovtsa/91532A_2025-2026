@@ -2,7 +2,7 @@
 
 #include "autons.hpp"
 void default_constants();
-void high_left();
+void wait();
 void high_right();
 void balls();
 void spin();

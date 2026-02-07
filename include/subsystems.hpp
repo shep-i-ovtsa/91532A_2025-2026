@@ -13,5 +13,4 @@ inline pros::Motor forward_intake(10);
 inline pros::Motor back_roller(9);
 inline pros::adi::Pneumatics hammerHead('A', false);
 inline pros::adi::Pneumatics Descore('B', false);
-inline pros::Imu imu_sensor(4);
 // inline pros::adi::DigitalIn limit_switch('A');

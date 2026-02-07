@@ -3,7 +3,13 @@
 #include "EZ-Template/util.hpp"
 #include "autons.hpp"
 #include "pros/misc.h"
+#include "pros/misc.hpp"
+#include "pros/rtos.hpp"
 #include "subsystems.hpp"
+bool global_lock_descore = false;
+bool confirmed_teleop = false;
+bool timer_pause = true;
+int match_time = 105;
 
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
@@ -13,12 +19,12 @@
 // Chassis constructor
 ez::Drive chassis(
     // These are your drive motors, the first motor is used for sensing!
-    {17,19,20},  // Left Chassis Ports (negative port will reverse it!)
-    {-13,-12,-11},  // Right Chassis Ports (negative port will reverse it!)
+    {-11,-12,-13},  // Left Chassis Ports (negative port will reverse it!)
+    {20,19,17},  // Right Chassis Ports (negative port will reverse it!)
 
     4,      // IMU Port
     3.25,   // Wheel Diameter (Remember, 4" wheels without screw holes are actually 4.125!)
-    600.0);  // Wheel RPM = cartridge * (motor gear / wheel gear)
+    450.0);  // Wheel RPM = cartridge * (motor gear / wheel gear)
 
 // Uncomment the trackers you're using here!
 // - `8` and `9` are smart ports (making these negative will reverse the sensor)
@@ -34,6 +40,8 @@ ez::Drive chassis(
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
+void escape_hatch(void* param);
+void timer_display(void* param);
 void initialize() {
   // Print our branding over your terminal :D
   ez::ez_template_print();
@@ -79,18 +87,17 @@ void initialize() {
       //{"Measure Offsets\n\nThis will turn the robot a bunch of times and calculate your offsets for your tracking wheels.", measure_offsets},
       //{"high_left",high_left},
       //{"spin 180 degrees",spin},      
-      {"qual right",awp_right},  
-      {"qual left",awp_left},
-      {"simple left",high_left},   
-      {"simple right",high_right},   
-      {"grab 3 balls",balls}
+       {"qual left",awp_left},
+      {"qual right",awp_right}, 
+      {"STAY PUT BUT MOVE A BIT",wait}
   });
 
   // Initialize chassis and auton selector  
   chassis.imu.reset();
   chassis.initialize();
   ez::as::initialize();
-
+  pros::Task escapeHatchTask(escape_hatch);
+  pros::Task timerDisplayTask(timer_display);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
 }
 
@@ -133,7 +140,7 @@ void autonomous() {
   chassis.drive_sensor_reset();               // Reset drive sensors to 0
   chassis.odom_xyt_set(0_in, 0_in, 0_deg);    // Set the current position, you can start at a specific position with this
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
-  
+  confirmed_teleop = false;
   /*
   Odometry and Pure Pursuit are not magic
 
@@ -149,6 +156,37 @@ void autonomous() {
 
   ez::as::auton_selector.selected_auton_call();  // Calls selected auton from autonomous selector
 }
+
+void escape_hatch(void* param){
+      while(true){
+        if(confirmed_teleop){
+          if(pros::competition::is_field_control()){
+            match_time--;
+          } else if(match_time){
+            match_time--;
+          }
+          pros::delay(989);
+          if(!pros::competition::is_disabled()){
+            if(match_time < 1){
+              global_lock_descore = true;
+              Descore.set_value(true);
+            }
+          } else {
+            break;
+        }
+        master.print(1, 1, "TIME LEFT: %d", match_time);
+        pros::delay(10);
+      }
+    }
+  }
+
+  void timer_display(){
+    while(true){
+      master.print(1, 1, "TIME LEFT: %d", match_time);
+      pros::delay(100);
+    }
+  }
+
 
 /**
  * Simplifies printing tracker values to the brain screen
@@ -264,7 +302,9 @@ void opcontrol() {
   double pitch = 0.0;
   double acceleration = 0.0;
 
-  while (true) {
+  while (true) {  
+    confirmed_teleop = true;
+
     // Gives you some extras to make EZ-Template ezier
     ez_template_extras();
 
@@ -285,11 +325,13 @@ void opcontrol() {
     if(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
       lower = false;
     }
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)){
-      descore_toggle = true;
-    }
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)){
-      descore_toggle = false;
+    if(!global_lock_descore){
+      if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)){
+        descore_toggle = true;
+      }
+      if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)){
+        descore_toggle = false;
+      }
     }
     if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
       forward_intake.move_velocity(180);
@@ -309,7 +351,11 @@ void opcontrol() {
     double pitch = chassis.imu.get_pitch();
     double accel_gs = chassis.imu.get_accel().z;
 
-float g_norm = clamp(accel_gs / 1.0, 0.0, 1.0);
+    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)&&master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
+      timer_pause = !timer_pause;
+    }
+
+float g_norm = clamp(accel_gs / 1.0, 0.0, 1.0); //yes
 float tip_threshold = 40.0 - 11.5 * g_norm;
 
 if (deadswitch) {
