@@ -182,7 +182,7 @@ void escape_hatch(void* param){
 
   void timer_display(){
     while(true){
-      master.print(1, 1, "TIME LEFT: %d", match_time);
+      master.print(1, 1, "TIME LEFT - R1 + L1 to pause: %d", match_time);
       pros::delay(100);
     }
   }
