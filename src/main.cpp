@@ -6,11 +6,25 @@
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"
 #include "subsystems.hpp"
-
+#include "tasks.h"
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
 /////
+
+
+
+/* Thread 1
+Proc1:  ####   ###
+Proc2:      ##    ##
+Proc3:              #
+*/
+
+/* Thread 2
+Proc1:  ####   ###
+Proc2:      ##    ##
+Proc3:              #
+*/
 
 // Chassis constructor
 ez::Drive chassis(
@@ -92,7 +106,12 @@ void initialize() {
   chassis.imu.reset();
   chassis.initialize();
   ez::as::initialize();
+  pros::Task matchloader_task(matchloader_function);
+  pros::Task escape_hatch_task(escape_hatch);
+  pros::Task timer_display_task(timer_display);
+
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
+
 }
 
 /**
