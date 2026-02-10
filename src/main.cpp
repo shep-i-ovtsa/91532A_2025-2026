@@ -50,8 +50,6 @@ ez::Drive chassis(
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void escape_hatch(void* param);
-void timer_display(void* param);
 void initialize() {
   // Print our branding over your terminal :D
   ez::ez_template_print();
@@ -107,8 +105,6 @@ void initialize() {
   chassis.initialize();
   ez::as::initialize();
   pros::Task matchloader_task(matchloader_function);
-  pros::Task escape_hatch_task(escape_hatch);
-  pros::Task timer_display_task(timer_display);
 
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
 
