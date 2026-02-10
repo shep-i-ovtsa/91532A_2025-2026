@@ -7,6 +7,7 @@
 #include "pros/rtos.hpp"
 #include "subsystems.hpp"
 #include "tasks.h"
+#include "timeMaster.hpp"
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
@@ -27,6 +28,9 @@ Proc3:              #
 */
 
 // Chassis constructor
+
+
+Timer_class timer;
 ez::Drive chassis(
     // These are your drive motors, the first motor is used for sensing!
     {-11,-12,-13},  // Left Chassis Ports (negative port will reverse it!)
@@ -105,9 +109,11 @@ void initialize() {
   chassis.initialize();
   ez::as::initialize();
   pros::Task matchloader_task(matchloader_function);
-
+  pros::Task descore_task(descore_function);
+  pros::Task intake_task(intake_function);
+  pros::Task flip_detection_task(flip_detection_function);
+  pros::Task time_keeper_task(time_keeper_proc);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
-
 }
 
 /**
@@ -117,6 +123,7 @@ void initialize() {
  */
 void disabled() {
   // . . .
+
 }
 
 /**
@@ -144,6 +151,7 @@ void competition_initialize() {
  * from where it left off.
  */
 void autonomous() {
+  timer.reset_time();
   chassis.pid_targets_reset();                // Resets PID targets to 0
   chassis.drive_imu_reset();                  // Reset gyro position to 0
   chassis.drive_sensor_reset();               // Reset drive sensors to 0
@@ -272,14 +280,7 @@ void ez_template_extras() {
 void opcontrol() {
   // This is preference to what you like to drive on
   chassis.drive_brake_set(MOTOR_BRAKE_COAST);
-  bool lower = false;
-  bool descore_toggle = false;
-  bool deadswitch = true;
-  bool flip = false;
-
-  double pitch = 0.0;
-  double acceleration = 0.0;
-
+  timer.start_time();
   while (true) {  
 
     // Gives you some extras to make EZ-Template ezier
@@ -293,57 +294,6 @@ void opcontrol() {
     // . . .
     // Put more user control code here!
     // . . .
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)){
-      deadswitch = !deadswitch;
-    }
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_A)){
-      lower = true;
-    }
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
-      lower = false;
-    }
-      if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)){
-        descore_toggle = true;
-      }
-      if(master.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)){
-        descore_toggle = false;
-      }
-    
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
-      forward_intake.move_velocity(180);
-    } else if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)){
-      forward_intake.move_velocity(-180);
-    } else {
-      forward_intake.move_velocity(0);
-    }
-    if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
-      back_roller.move_velocity(180);
-    }
-    else if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
-      back_roller.move_velocity(-180);
-    } else {
-      back_roller.move_velocity(0);
-    }
-    double pitch = chassis.imu.get_pitch();
-    double accel_gs = chassis.imu.get_accel().z;
-
-
-
-float g_norm = clamp(accel_gs / 1.0, 0.0, 1.0); //yes
-float tip_threshold = 40.0 - 11.5 * g_norm;
-
-if (deadswitch) {
-    if (pitch > tip_threshold) {
-        flip = true;
-    }
-    else if (pitch < tip_threshold - 8) {   
-        flip = false;
-    }
-}
- 
-    if(flip){lower = true; } 
-    hammerHead.set_value(lower);
-    Descore.set_value(descore_toggle);
     pros::delay(ez::util::DELAY_TIME);  // This is used for timer calculations!  Keep this ez::util::DELAY_TIME
   }
 }
