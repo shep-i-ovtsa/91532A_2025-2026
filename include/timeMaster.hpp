@@ -1,18 +1,26 @@
-#ifndef _TIMEMASTER_HPP_
-#define _TIMEMASTER_HPP_
-enum state {PAUSED, RUNNING, IDLE}; 
-class Timer_class{
-private:
-    double time;
-    state timer_state = state::PAUSED;
-public:
-    double get_time();
-    state get_state();
-    void start_time();
-    void pause_time();
-    void reset_time();
-    void set_time(int time);
+#pragma once
+#ifndef TIME_MASTER_HPP
+#define TIME_MASTER_HPP
+enum class state {
+    IDLE,
+    RUNNING,
+    PAUSED
+};
 
-};    
-void time_keeper(void* param);
+class Timer_class {
+public:
+    static double get_time();
+    static state get_state();
+
+    static void start_time();
+    static void pause_time();
+    static void reset_time();
+    static void set_time(double time);
+
+private:
+    static double time;
+    static state timer_state;
+};
+
+void time_keeper_proc(void* param);
 #endif
