@@ -1,7 +1,7 @@
 {
   "py/object": "pros.conductor.project.Project",
   "py/state": {
-    "project_name": "EZ-Template",
+    "project_name": "91532A-2025-2026",
     "target": "v5",
     "templates": {
       "kernel": {
@@ -402,7 +402,8 @@
       "compress_bin": true,
       "description": "roboticsisez.com",
       "remote_name": "EZ-Template",
-      "slot": 1
+      "slot": 1,
+      "icon": "pros"
     },
     "use_early_access": false
   }

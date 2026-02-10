@@ -13,6 +13,10 @@
 // https://ez-robotics.github.io/EZ-Template/
 /////
 
+// ! critical
+// ? question
+// todo 
+// * note
 
 
 /* Thread 1
@@ -30,7 +34,6 @@ Proc3:              #
 // Chassis constructor
 
 
-Timer_class timer;
 ez::Drive chassis(
     // These are your drive motors, the first motor is used for sensing!
     {-11,-12,-13},  // Left Chassis Ports (negative port will reverse it!)
@@ -49,7 +52,7 @@ ez::Drive chassis(
 // ez::tracking_wheel vert_tracker(9, 2.75, 4.0);   // This tracking wheel is parallel to the drive wheels
 
 /**
- * Runs initialization code. This occurs as soon as the program is started.
+// * Runs initialization code. This occurs as soon as the program is started.
  *
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
@@ -81,30 +84,16 @@ void initialize() {
   // chassis.opcontrol_curve_buttons_left_set(pros::E_CONTROLLER_DIGITAL_LEFT, pros::E_CONTROLLER_DIGITAL_RIGHT);  // If using tank, only the left side is used.
   // chassis.opcontrol_curve_buttons_right_set(pros::E_CONTROLLER_DIGITAL_Y, pros::E_CONTROLLER_DIGITAL_A);
 
-  // Autonomous Selector using LLEMU
+  // ! Autonomous Selector using LLEMU
   ez::as::auton_selector.autons_add({
-      //{"Drive\n\nDrive forward and come back", dri // ve_example},
-      //{"Turn\n\nTurn 3 times.", turn_example},
-      //{"Drive and Turn\n\nDrive forward, turn, come back", drive_and_turn},
-      //{"Drive and Turn\n\nSlow down during drive", wait_until_change_speed},
-      //{"Swing Turn\n\nSwing in an 'S' curve", swing_example},
-      //{"Motion Chaining\n\nDrive forward, turn, and come back, but blend everything together :D", motion_chaining},
-      //{"Combine all 3 movements", combining_movements},
-      //{"Interference\n\nAfter driving forward, robot performs differently if interfered or not", interfered_example},
-      //{"Simple Odom\n\nThis is the same as the drive example, but it uses odom instead!", odom_drive_example},
-      //{"Pure Pursuit\n\nGo to (0, 30) and pass through (6, 10) on the way.  Come back to (0, 0)", odom_pure_pursuit_example},
-      //{"Pure Pursuit Wait Until\n\nGo to (24, 24) but start running an intake once the robot passes (12, 24)", odom_pure_pursuit_wait_until_example},
-      //{"Boomerang\n\nGo to (0, 24, 45) then come back to (0, 0, 0)", odom_boomerang_example},
-      //{"Boomerang Pure Pursuit\n\nGo to (0, 24, 45) on the way to (24, 24) then come back to (0, 0, 0)", odom_boomerang_injected_pure_pursuit_example},
-      //{"Measure Offsets\n\nThis will turn the robot a bunch of times and calculate your offsets for your tracking wheels.", measure_offsets},
-      //{"high_left",high_left},
-      //{"spin 180 degrees",spin},      
+    
        {"qual left",awp_left},
       {"qual right",awp_right}, 
       {"STAY PUT BUT MOVE A BIT",wait}
   });
 
   // Initialize chassis and auton selector  
+  chassis.imu.reset();
   chassis.imu.reset();
   chassis.initialize();
   ez::as::initialize();
@@ -122,6 +111,7 @@ void initialize() {
  * the robot is enabled, this task will exit.
  */
 void disabled() {
+  Timer_class::pause_time();
   // . . .
 
 }
@@ -151,7 +141,7 @@ void competition_initialize() {
  * from where it left off.
  */
 void autonomous() {
-  timer.reset_time();
+  Timer_class::reset_time();
   chassis.pid_targets_reset();                // Resets PID targets to 0
   chassis.drive_imu_reset();                  // Reset gyro position to 0
   chassis.drive_sensor_reset();               // Reset drive sensors to 0
@@ -280,7 +270,7 @@ void ez_template_extras() {
 void opcontrol() {
   // This is preference to what you like to drive on
   chassis.drive_brake_set(MOTOR_BRAKE_COAST);
-  timer.start_time();
+  Timer_class::start_time();
   while (true) {  
 
     // Gives you some extras to make EZ-Template ezier

@@ -1,16 +1,12 @@
 #pragma once
 #ifndef TIME_MASTER_HPP
 #define TIME_MASTER_HPP
-enum class state {
-    IDLE,
-    RUNNING,
-    PAUSED
-};
+#include "states.hpp"
 
 class Timer_class {
 public:
     static double get_time();
-    static state get_state();
+    static timer_state get_state();
 
     static void start_time();
     static void pause_time();
@@ -19,7 +15,7 @@ public:
 
 private:
     static double time;
-    static state timer_state;
+    static timer_state timer_state;
 };
 
 void time_keeper_proc(void* param);
