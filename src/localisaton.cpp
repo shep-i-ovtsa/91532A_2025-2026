@@ -66,3 +66,10 @@ bool localisation::which_Sensor(double theta_deg) {
     return std::abs(std::cos(theta)) >= std::abs(std::sin(theta));
 }
 //todo add some weighted equations to determine which sensors are more correct xd
+//todo add x coordinate calculation
+//todo add y coordinate calculation\
+//todo choose a smoothing filter to reduce mm jiter
+//todo finish final triangulation function
+//todo finish update loop
+//todo finish prediciton logic
+    //!make sure to use time Master for accuracte timing
