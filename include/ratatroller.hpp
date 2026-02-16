@@ -51,6 +51,7 @@ public:
     public:
         void display_menu();
         menu_option add_option(std::string id, std::string text);
+        static void controller_task(void* param);
     private:
         std::vector<menu_option> options;
     };
