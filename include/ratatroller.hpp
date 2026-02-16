@@ -2,6 +2,7 @@
 #define RATATROLLER_HPP
 #include <string>
 #include "pros/misc.h"
+#include "pros/misc.hpp"
 #include <functional>
 #include <array>
 #include <vector>
@@ -61,6 +62,7 @@ public:
 
 private:
     target current_target;
+    static pros::Controller current_controller(current_target);
     keybind NAV_FORWARD = keybind::KEY_RIGHT;
     keybind NAV_BACKWARD = keybind::KEY_LEFT;
     keybind NAV_UP = keybind::KEY_UP;
