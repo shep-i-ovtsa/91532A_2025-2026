@@ -1,6 +1,6 @@
 #include "localisation.hpp"
 #include "timeMaster.hpp"
-#include <math.h>
+#include <cmath>
 const double FIELD_WIDTH = 2500.0;
 const double FIELD_HEIGHT = 2500.0;
 

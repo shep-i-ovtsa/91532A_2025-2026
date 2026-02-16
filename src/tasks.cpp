@@ -5,13 +5,14 @@
 #include "pros/rtos.hpp"
 #include "subsystems.hpp"
 #include "main.h"
+
 volatile bool flip  = false;
 void matchloader_function(void* param){
   while(true){
     if(!flip){
-      if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP )){
+      if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
         hammerHead.set_value(true);
-      } else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)){
+      } else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)){
         hammerHead.set_value(false);
       }
     } else {
@@ -80,3 +81,4 @@ void descore_function(void* param){
     pros::delay(pros::competition::is_disabled() ? 500 : 100);
   }
 }
+

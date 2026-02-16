@@ -2,27 +2,27 @@
 #include "pros/rtos.hpp"
 
 double Timer_class::time = 105.0;
-timer_state Timer_class::timer_state = timer_state::IDLE;
+timer_state Timer_class::current_timer_state = timer_state::IDLE;
 
 double Timer_class::get_time() {
     return time;
 }
 
 timer_state Timer_class::get_state() {
-    return timer_state;
+    return current_timer_state;
 }
 
 void Timer_class::start_time() {
-    timer_state = timer_state::RUNNING;
+    current_timer_state = timer_state::RUNNING;
 }
 
 void Timer_class::pause_time() {
-    timer_state = timer_state::PAUSED;
+    current_timer_state = timer_state::PAUSED;
 }
 
 void Timer_class::reset_time() {
     time = 105.0;
-    timer_state = timer_state::IDLE;
+    current_timer_state = timer_state::IDLE;
 }
 
 void Timer_class::set_time(double new_time) {

@@ -15,7 +15,7 @@ public:
 
 private:
     static double time;
-    static timer_state timer_state;
+    static timer_state current_timer_state;
 };
 
 void time_keeper_proc(void* param);

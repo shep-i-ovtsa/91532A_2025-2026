@@ -103,6 +103,7 @@ void initialize() {
   pros::Task flip_detection_task(flip_detection_function);
   pros::Task time_keeper_task(time_keeper_proc);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
+  
 }
 
 /**
@@ -267,16 +268,15 @@ void ez_template_extras() {
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
-void opcontrol() {
+void opcontrol() {  
+  chassis.pid_tuner_disable();
   // This is preference to what you like to drive on
   chassis.drive_brake_set(MOTOR_BRAKE_COAST);
   Timer_class::start_time();
   while (true) {  
-
     // Gives you some extras to make EZ-Template ezier
     ez_template_extras();
-
-    //chassis.opcontrol_tank();  // Tank control
+          //chassis.opcontrol_tank();  // Tank control
     chassis.opcontrol_arcade_standard(ez::SPLIT);   // Standard split arcade
     //chassis.opcontrol_arcade_standard(ez::SINGLE);  // Standard single arcade
     // chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
