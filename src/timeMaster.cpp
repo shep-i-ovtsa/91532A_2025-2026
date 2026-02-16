@@ -34,9 +34,11 @@ void time_keeper_proc(void* param) {
 
     while (true) {
         if (Timer_class::get_state() == timer_state::RUNNING) {
-            Timer_class::set_time(
-                Timer_class::get_time() - tick
-            );
+            Timer_class::set_time(Timer_class::get_time() - tick);
+            if(Timer_class::get_time() <= 0.0){
+                Timer_class::pause_time();
+                break;
+            }
         }
 
         pros::delay(
