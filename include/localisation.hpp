@@ -4,19 +4,20 @@
 #include "pros/device.hpp"
 #include "pros/distance.hpp"
 #include "pros/imu.hpp"
+
 struct position {
 private:
     int x_mm = 0;
     int y_mm = 0;
-    double theta_deg = 0.0;
-    double process_theta(double theta);
+    long theta_deg = 0.0;
+    long process_theta(long theta);
 public:
     void set_pose(int new_x, int new_y, double new_theta);
 
 
     int get_x() const;
     int get_y() const;
-    double get_theta() const;
+    long get_theta() const;
 };
 struct sensor_data {
     int Left_Sensor_mm;
@@ -27,7 +28,13 @@ struct sensor_data {
     int back_confidence;
     int Front_Sensor_mm;
     int front_confidence;
-    double heading_deg;
+    long heading_deg;
+};
+struct offsets {
+    int back;
+    int front;
+    int left;
+    int right; //!the cortex a9 is a 32 bit processor, optimise for 32 bit / 16 bit operations when possible!
 };
 class localisation {
 private:
@@ -42,11 +49,16 @@ private:
     sensor_data read_sensors();
     void triangulate_position();    
     position current_position;
+    offsets current_offset;
+    sensor_data current_sensor_data;
 public:
+    long get_horizontal_vision();
+    long getvertical_vision();
     void update();
     localisation(pros::Distance& left_sensor, pros::Distance& right_sensor, pros::Distance& back_sensor, pros::Distance& front_sensor, pros::Imu& imu);
     position get_current_pose() const;
     position get_predicted_pose(double time) const;
+    void set_offset(int back, int front, int left, int right);
      //!passing distance sensor copies are EXPENSIVE, so we pass by reference so we pass references instead
 };
 
