@@ -3,12 +3,14 @@
 
 #include <vector>
 #include "localisation.hpp"
+
 class movement{
 public:
+
     movement(localisation& loc);
     void move_to();
 private:
-    std::vector<obsticle>& known_obsticles;
+    static std::vector<obsticle>& known_obsticles;    
     localisation& loco;
     position& pos;
 };

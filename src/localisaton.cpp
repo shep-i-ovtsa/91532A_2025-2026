@@ -51,7 +51,12 @@ void math_params::set_accel(float gain, float accel_max, float smoothing_max){
 void localisation::add_obsticle(obsticle& obs){
     this -> known_obstacles.emplace_back(obs);
 }
-
+void localisation::pop_obsticle(){
+    this -> known_obstacles.pop_back();
+}
+std::vector<obsticle>& localisation::get_obsticles(){
+    return known_obstacles;
+}
 
 static float ray_to_wall_distance(
     float px, float py,
