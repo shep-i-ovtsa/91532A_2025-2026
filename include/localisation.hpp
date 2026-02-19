@@ -66,14 +66,14 @@ struct math_params{
     void adjust_cred(float front, float back, float left, float right);
     math_params();
 };
-class math{
+struct trig_table{
     private:
     static float sin_table[360];
     static float cos_table[360];
     public:
     float sin(int deg);
     float cos(int deg);
-    math();
+    trig_table();
 };
 class localisation {
 private:
@@ -111,4 +111,4 @@ public:
     void set_offset(int back, int front, int left, int right);
      //!passing distance sensor copies are EXPENSIVE, so we pass by reference so we pass references instead
 };
-#endif
+#endif 

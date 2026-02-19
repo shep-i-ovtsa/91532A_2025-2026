@@ -4,7 +4,8 @@
 #include "timeMaster.hpp"
 #include <cmath>
 #include <cstdio>
-
+float trig_table::sin_table[360];
+float trig_table::cos_table[360];
 const float FIELD_WIDTH  = 3650.0f;
 const float FIELD_HEIGHT = 3650.0f;
 const float SMOOTH = 0.25f; //REMEMBER the f at the end tells the compiler to make the numebr a float. otherwise it defaults to doubles which take a whole extra cycle for compute
@@ -62,24 +63,24 @@ static float ray_to_wall_distance(
 
     return t_min;
 }
-math::math(){
+trig_table::trig_table(){
     for(int i = 0; i < 360; i++){
        float r = i * 0.01745329252f; //conversion for radians 
-       sin_table[i] = sinf(r);
-       cos_table[i] = cosf(r);
+       trig_table::sin_table[i] = sinf(r);
+       trig_table::cos_table[i] = cosf(r);
     }
 }
 
-float math::sin(int deg){
+float trig_table::sin(int deg){
     deg %= 360;
-        if(deg < 0) deg += 360;
-    return sin_table[deg];
+        if(deg < 0) deg += 360; // ik it looks weird but if someone puts in a weird negative angle or something, this processes it back to a usable value
+    return this -> sin_table[deg];
 }
 
-float math::cos(int deg){
+float trig_table::cos(int deg){
     deg %= 360;
         if(deg < 0) deg += 360;
-    return cos_table[deg];
+    return this -> cos_table[deg];
 }
 
 void position::set_pose(float new_x, float new_y, float new_theta){
@@ -100,7 +101,7 @@ int position::get_theta() const { return theta_deg; }
 
 //----------------------------------------------------------------
 
-static math trig; //global sin and cos lookup table for speed >:3
+static trig_table trig; //global sin and cos lookup table for speed >:3
 
 void localisation::update_position(int x_mm, int y_mm, double theta_deg) {
     current_position.set_pose(x_mm, y_mm, (int)theta_deg);

@@ -61,7 +61,6 @@ ez::Drive chassis(
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
- void monitor_task(void* param);
 
 void initialize() {
   // Print our branding over your terminal :D
@@ -108,7 +107,6 @@ void initialize() {
   pros::Task intake_task(intake_function);
   pros::Task flip_detection_task(flip_detection_function);
   pros::Task time_keeper_task(time_keeper_proc);
-  pros::Task monitor(monitor_task);
   pros::Task center_score(center_score_function);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
   
@@ -277,79 +275,6 @@ void ez_template_extras() {
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
-
-void monitor_task(void* param) {
-    imu.set_heading(0);
-    int x;
-    int y;
-    int x2;
-    int y2;
-    int theta;
-    bool up;
-    int back_dist;
-    double back_size ;
-
-    int front_dist;
-    double front_size ;
-
-    int left_dist;
-    double left_size;
-
-    int right_dist;
-    double right_size;
-
-  while (true) {       
-    partner.clear();
- 
-    theta = imu.get_heading();
-
-    int back_dist = back_sensor.get()+179;
-
-    int front_dist = front_sensor.get()+179;
-
-    int left_dist = left_sensor.get()+125;
-
-    int right_dist = right_sensor.get()+125;
-
-    x = left_dist;
-    y = back_dist;
-    x2 = right_dist;
-    y2 = front_dist;
-    float horizontal_percent = (x+x2);
-    float vertical_percent = (y+y2);
-    horizontal_percent = round((horizontal_percent/3650.0)*100);
-    vertical_percent = round((vertical_percent/3650.0)*100);
-    if(x > 2500) x = NULL;
-    if(y > 2500) y = NULL;
-    if(x2 > 2500) x2 = NULL;
-    if(y2 > 2500) y2 = NULL;
-      pros::delay(100);  
-      partner.set_text(0, 0 , "x: "+std::to_string(x)+"|"+std::to_string(x2));
-      pros::delay(50);  
-      partner.set_text(1, 0 , "y: "+std::to_string(y)+"|"+std::to_string(y2));
-      pros::delay(50);  
-      if(partner.get_digital(pros::E_CONTROLLER_DIGITAL_LEFT)){
-      partner.set_text(2,0,"V%:"+std::to_string(vertical_percent));
-      } else if(partner.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)){
-      partner.set_text(2,0,"H%:"+std::to_string(horizontal_percent));
-      } else {
-      partner.set_text(2,0,"0%:"+std::to_string(theta));
-      }
-    
-    /*if(partner.get_digital(pros::E_CONTROLLER_DIGITAL_RIGHT)){
-      pros::delay(50);  
-      if(partner.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP))partner.print(0, 0, "Back : %4d | %5.2f", back_dist, back_size);
-      else partner.print(0, 0, "front : %4d | %5.2f", front_dist, front_size);
-      pros::delay(50);  
-      partner.print(1, 0, "Left : %4d | %5.2f", left_dist, left_size);
-      pros::delay(50);  
-      partner.print(2, 0, "Right: %4d | %5.2f", right_dist, right_size);
-      pros::delay(50);  
-    }*/
-
-    pros::delay(600);      
-  }
-}
 
 void opcontrol() {  
 
