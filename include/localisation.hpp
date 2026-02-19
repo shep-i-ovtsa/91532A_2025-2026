@@ -111,6 +111,7 @@ private:
     float motion_blur();
 public:
     std::vector<obsticle> known_obstacles; //hold onto know obstacles
+    std::vector<obsticle>& get_obsticles();
     void add_obsticle(obsticle& obsticle);
     void pop_obsticle(std::string name);
     math_params params;
