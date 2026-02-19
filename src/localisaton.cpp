@@ -376,12 +376,15 @@ void estimate_obsticles(){
 }
 
 localisation::localisation(pros::Distance& left_sensor,pros::Distance& right_sensor,pros::Distance& back_sensor,pros::Distance& front_sensor,pros::Imu& imu)
-    : Left_Sensor(left_sensor),Right_Sensor(right_sensor),Back_Sensor(back_sensor),Front_Sensor(front_sensor),imu(imu){
+    : Left_Sensor(left_sensor),Right_Sensor(right_sensor),Back_Sensor(back_sensor),Front_Sensor(front_sensor),imu(imu), background_task(background_update_process , this){
     imu.set_heading(0);
-    set_offset(0, 0, 0, 0);
-    pros::Task background_update(background_update_process, this);
-}
 
+    while(imu.is_calibrating()) pros::delay(10);
+    set_offset(0, 0, 0, 0);
+}
+void localisation::set_start_position(int x, int y, int theta){
+    update_position(x,y,theta);
+}
 position& localisation::get_current_pose() {
     return current_position;
 }

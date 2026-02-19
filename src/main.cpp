@@ -12,6 +12,7 @@
 #include "tasks.h"
 #include "timeMaster.hpp"
 #include <cmath>
+#include "mtp.hpp"
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
@@ -102,6 +103,11 @@ void initialize() {
   chassis.imu.reset();
   chassis.initialize();
   ez::as::initialize();
+  localisation local(left_sensor , right_sensor , back_sensor , front_sensor , imu);
+  local.set_offset(150,150,125,125);
+  movement move(local);
+
+
   pros::Task matchloader_task(matchloader_function);
   pros::Task descore_task(descore_function);
   pros::Task intake_task(intake_function);
@@ -279,8 +285,7 @@ void ez_template_extras() {
 void opcontrol() {  
 
   //*
-  localisation local(left_sensor , right_sensor , back_sensor , front_sensor , imu);
-  local.set_offset(150,150,125,125);
+
   //*
   Timer_class::start_time(); 
   chassis.drive_brake_set(MOTOR_BRAKE_COAST);

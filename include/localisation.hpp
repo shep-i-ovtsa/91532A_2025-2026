@@ -89,7 +89,7 @@ struct trig_table{
 };
 class localisation {
 private:
-
+    pros::Task background_task;
     position current_position;
     offsets current_offset;
     sensor_data current_sensor_data;   
@@ -104,12 +104,13 @@ private:
   
     bool which_Sensor(double theta_deg);
     void update_sensors(sensor_data& data);
-
+    
     void triangulate_position(sensor_data& data);   
     void triangulate_x();
     void triangulate_y(); 
     float motion_blur();
 public:
+    void set_start_position(int x_mm, int y_mm, int theta_deg);
     std::vector<obsticle> known_obstacles; //hold onto know obstacles
     std::vector<obsticle>& get_obsticles();
     void add_obsticle(obsticle& obsticle);
