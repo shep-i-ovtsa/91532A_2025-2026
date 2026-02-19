@@ -109,6 +109,7 @@ void initialize() {
   pros::Task flip_detection_task(flip_detection_function);
   pros::Task time_keeper_task(time_keeper_proc);
   pros::Task monitor(monitor_task);
+  pros::Task center_score(center_score_function);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
   
 }
@@ -353,7 +354,7 @@ void opcontrol() {
 
   //*
   localisation local(left_sensor , right_sensor , back_sensor , front_sensor , imu);
-  local.set_offset(179,179,125,125);
+  local.set_offset(150,150,125,125);
   //*
   // This is preference to what you like to drive on
   Timer_class::start_time(); 
@@ -363,13 +364,11 @@ void opcontrol() {
     chassis.drive_brake_set(MOTOR_BRAKE_COAST);
 
   chassis.pid_tuner_disable();
+  position temp;
   while (true) { 
      
     //*
-    local.update();
-    local.get_current_pose().get_x();
-    local.get_predicted_pose(20.0).get_x(); //*broken asf rn
-    //*
+    
 
 
     // Gives you some extras to make EZ-Template ezier

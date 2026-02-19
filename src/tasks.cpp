@@ -1,4 +1,5 @@
 #include "tasks.h"
+#include <string>
 #include "EZ-Template/util.hpp"
 #include "pros/misc.h"
 #include "pros/misc.hpp"
@@ -6,7 +7,7 @@
 #include "subsystems.hpp"
 #include "main.h"
 
-volatile bool flip  = false;
+bool flip  = false;
 void matchloader_function(void* param){
   while(true){
     if(!flip){
@@ -18,36 +19,33 @@ void matchloader_function(void* param){
     } else {
       hammerHead.set_value(true);
     }
-    pros::delay(pros::competition::is_disabled() ? 500 : 100);
+    pros::delay(pros::competition::is_disabled() ? 400 : 100);
 
     }
 }
+
 void flip_detection_function(void* param){
-  bool deadswitch = true;
   double accel_gs = 0.0;
   double pitch = 0.0;
+
   while(true){
     pitch = imu.get_pitch();
     accel_gs = imu.get_accel().z;
-    float g_norm = clamp(accel_gs / 1.0, 0.0, 1.0); //yes
+
+    float g_norm = clamp(accel_gs / 1.0, 0.0, 1.0);
     float tip_threshold = 40.0 - 11.5 * g_norm;
 
-    if (deadswitch) {
-        if (pitch > tip_threshold) {
-          flip = true;
-        }
-        else if (pitch < tip_threshold - 8) {   
-          flip = false;
-        }
+    if (pitch > tip_threshold) {
+      flip = true;
+    }
+    else if (pitch < tip_threshold - 8) {   
+      flip = false;
     }
 
-    if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)){
-      deadswitch = !deadswitch;
-    }
-    pros::delay(pros::competition::is_disabled() ? 500 : 40);
+    pros::delay(pros::competition::is_disabled() ? 400 : 40);
   }
-
 }
+
 
 void intake_function(void* param){
   while(true){
@@ -66,7 +64,7 @@ void intake_function(void* param){
     } else {
       back_roller.move_velocity(0);
     }
-    pros::delay(pros::competition::is_disabled() ? 500 : 100);
+    pros::delay(pros::competition::is_disabled() ? 400 : 100);
 
   }
 }
@@ -78,7 +76,19 @@ void descore_function(void* param){
     else if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)){
        Descore.set_value(false);
     }
-    pros::delay(pros::competition::is_disabled() ? 500 : 100);
+    pros::delay(pros::competition::is_disabled() ? 400 : 100);
+  }
+}
+
+void center_score_function(void* param){
+  bool open = false;
+  while(true){
+    if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)){
+      open = !open;
+    }
+    master.set_text(2,0,std::to_string(open));
+    center_score.set_value(open);
+    pros::delay(100);
   }
 }
 
