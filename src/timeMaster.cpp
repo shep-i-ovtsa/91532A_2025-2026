@@ -43,7 +43,7 @@ void time_keeper_proc(void* param) {
 
         pros::delay(
             Timer_class::get_state() == timer_state::RUNNING
-                ? (tick * 1000) : 500
+                ? (tick * 1000) : 100
         );
     }
 }

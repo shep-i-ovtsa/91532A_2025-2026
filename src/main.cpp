@@ -150,6 +150,7 @@ void competition_initialize() {
  * from where it left off.
  */
 void autonomous() {
+  Timer_class::pause_time();
   Timer_class::reset_time();
   chassis.pid_targets_reset();                // Resets PID targets to 0
   chassis.drive_imu_reset();                  // Reset gyro position to 0
@@ -356,15 +357,10 @@ void opcontrol() {
   localisation local(left_sensor , right_sensor , back_sensor , front_sensor , imu);
   local.set_offset(150,150,125,125);
   //*
-  // This is preference to what you like to drive on
   Timer_class::start_time(); 
-  
-  
-  
-    chassis.drive_brake_set(MOTOR_BRAKE_COAST);
+  chassis.drive_brake_set(MOTOR_BRAKE_COAST);
 
   chassis.pid_tuner_disable();
-  position temp;
   while (true) { 
      
     //*
