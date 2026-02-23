@@ -8,3 +8,5 @@ void balls();
 void spin();
 void awp_left();
 void awp_right();
+void pid_turn_auton();
+void pid_auton();

@@ -5,9 +5,11 @@
 #include "autons.hpp"
 #include "liblvgl/lvgl.h"
 #include "localisation.hpp"
+#include "pros/device.hpp"
 #include "pros/misc.h"
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"
+#include "states.hpp"
 #include "subsystems.hpp"
 #include "tasks.h"
 #include "timeMaster.hpp"
@@ -62,7 +64,7 @@ ez::Drive chassis(
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-
+void monitor_task(void* param);
 void initialize() {
   // Print our branding over your terminal :D
   ez::ez_template_print();
@@ -90,9 +92,12 @@ void initialize() {
   // chassis.opcontrol_curve_buttons_left_set(pros::E_CONTROLLER_DIGITAL_LEFT, pros::E_CONTROLLER_DIGITAL_RIGHT);  // If using tank, only the left side is used.
   // chassis.opcontrol_curve_buttons_right_set(pros::E_CONTROLLER_DIGITAL_Y, pros::E_CONTROLLER_DIGITAL_A);
 
+  chassis.pid_tuner_disable(); //!disable after tuning
+
   // ! Autonomous Selector using LLEMU
   ez::as::auton_selector.autons_add({
-    
+      {"tune drive",pid_auton},
+      {"tune turn",pid_turn_auton},
        {"qual left",awp_left},
       {"qual right",awp_right}, 
       {"STAY PUT BUT MOVE A BIT",wait}
@@ -103,17 +108,7 @@ void initialize() {
   chassis.imu.reset();
   chassis.initialize();
   ez::as::initialize();
-  localisation local(left_sensor , right_sensor , back_sensor , front_sensor , imu);
-  local.set_offset(150,150,125,125);
-  movement move(local);
-
-
-  pros::Task matchloader_task(matchloader_function);
-  pros::Task descore_task(descore_function);
-  pros::Task intake_task(intake_function);
-  pros::Task flip_detection_task(flip_detection_function);
-  pros::Task time_keeper_task(time_keeper_proc);
-  pros::Task center_score(center_score_function);
+  pros::Task anti(anti_descore);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
   
 }
@@ -154,6 +149,7 @@ void competition_initialize() {
  * from where it left off.
  */
 void autonomous() {
+  
   Timer_class::pause_time();
   Timer_class::reset_time();
   chassis.pid_targets_reset();                // Resets PID targets to 0
@@ -282,19 +278,35 @@ void ez_template_extras() {
  * task, not resume it from where it left off.
  */
 
-void opcontrol() {  
-
+ void opcontrol() {  
+  pros::Task matchloader_task(matchloader_function);
+  pros::Task descore_task(descore_function);
+  pros::Task intake_task(intake_function);
+  //pros::Task flip_detection_task(flip_detection_function);
+  pros::Task time_keeper_task(time_keeper_proc);
+  pros::Task center_score(center_score_function);
   //*
 
   //*
   Timer_class::start_time(); 
   chassis.drive_brake_set(MOTOR_BRAKE_COAST);
-
-  chassis.pid_tuner_disable();
+  chassis.pid_tuner_iterate();
   while (true) { 
-     
+    if(Timer_class::get_time() < 10 && Timer_class::get_state() != timer_state::PAUSED){
+      master.rumble(".");
+      master.set_text(2,0,"time:"+std::to_string(Timer_class::get_time()));
+    }
+    if(Timer_class::get_time() <2){
+      Descore.extend();
+    }
     //*
-    
+       if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
+        hammerHead.set_value(true);
+        master.rumble(".");
+      } else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)){
+        hammerHead.set_value(false);
+        master.rumble(".");
+      }
 
 
     // Gives you some extras to make EZ-Template ezier

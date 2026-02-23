@@ -8,6 +8,8 @@
 #include "pros/misc.hpp"
 #include "pros/motor_group.hpp"
 #include "pros/motors.hpp"
+#include "pros/optical.hpp"
+#include "pros/vision.hpp"
 
 extern Drive chassis;
 inline pros::Controller partner(pros::E_CONTROLLER_PARTNER);
@@ -22,5 +24,5 @@ inline pros::Distance back_sensor(5);
 inline pros::Distance left_sensor(3);
 inline pros::Distance right_sensor(6);
 inline pros::Distance front_sensor(2);
-
+inline pros::Optical eyes(18);
 // inline pros::adi::DigitalIn limit_switch('A');

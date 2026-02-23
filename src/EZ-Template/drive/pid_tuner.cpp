@@ -108,8 +108,8 @@ void Drive::pid_tuner_print() {
 
   complete_pid_tuner_output = sname + "\n" + skp + ski + skd + sstarti + "\n";
 
-  //pid_tuner_print_brain();
-  //pid_tuner_print_terminal();
+  pid_tuner_print_brain();
+  pid_tuner_print_terminal();
 }
 
 // Print tuner to brain if it's enabled
@@ -180,12 +180,12 @@ void Drive::pid_tuner_iterate() {
     column++;
     if (column > used_pid_tuner_pids->size() - 1)
       column = 0;
-    //pid_tuner_print();
+    pid_tuner_print();
   } else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)) {
     column--;
     if (column < 0)
       column = used_pid_tuner_pids->size() - 1;
-    //pid_tuner_print();
+    pid_tuner_print();
   }
 
   // Left / Right for Columns
@@ -193,20 +193,20 @@ void Drive::pid_tuner_iterate() {
     row++;
     if (row > 3)
       row = 0;
-    //pid_tuner_print();
+    pid_tuner_print();
   } else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
     row--;
     if (row < 0)
       row = 3;
-    //pid_tuner_print();
+    pid_tuner_print();
   }
 
   // Increase / Decrease constant
   if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
-    //pid_tuner_value_increase();
-    //pid_tuner_print();
+    pid_tuner_value_increase();
+    pid_tuner_print();
   } else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
-    //pid_tuner_value_decrease();
-    //pid_tuner_print();
+    pid_tuner_value_decrease();
+    pid_tuner_print();
   }
 }
