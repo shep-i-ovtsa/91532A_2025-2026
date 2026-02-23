@@ -10,9 +10,9 @@ private:
     float x_mm = 0;
     float y_mm = 0; 
     float theta_deg = 0.0; 
-    inline int process_theta(int theta){
-        theta %= 360;
-            if (theta < 0) theta += 360;
+    inline float process_theta(float theta){
+        theta = fmodf(theta, 360.0f);
+        if (theta < 0) theta += 360.0f;
         return theta;
     }
 public:
@@ -23,14 +23,14 @@ public:
         theta_deg = process_theta(new_theta);
     }
 
-    int get_x() const{
+    float get_x() const{
         return this -> x_mm;
     }
-    int get_y() const{
+    float get_y() const{
         return this -> y_mm;
     }
-    int get_theta() const{
-        return this -> y_mm;
+    float get_theta() const{
+        return this -> theta_deg;
     }
     void set_x(float x){
         this -> x_mm = x;
@@ -172,6 +172,7 @@ private:
     void triangulate_y(); 
     float motion_blur();
 public:    
+    void start();
     math_params params;
 
 

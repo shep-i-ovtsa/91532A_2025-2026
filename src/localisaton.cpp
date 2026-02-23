@@ -68,7 +68,6 @@ float ray_to_nearest_obstacle(float px, float py,float dx, float dy,const std::v
 }
 
 
-//----------------------------------------------------------------
 
 static trig_table trig; //global sin and cos lookup table for speed >:3
 
@@ -218,7 +217,6 @@ void localisation::triangulate_y() {
 
         float alpha = params.smoothing;
 
-        // optional: adaptive smoothing from acceleration
         float accel_mag = sqrtf(
             current_sensor_data.x_gs * current_sensor_data.x_gs +
             current_sensor_data.y_gs * current_sensor_data.y_gs
@@ -228,15 +226,14 @@ void localisation::triangulate_y() {
         alpha += accel_factor * params.accel_gain;
         alpha = fminf(alpha, params.smoothing_max);
 
-        // EMA
         float y_filtered = alpha * y_est + (1.0f - alpha) * y_prev;
 
-        current_position.set_x(y_filtered);    
+        current_position.set_y(y_filtered);    
     }
 } //stole some math from theese guys :p and fixed our feedback loop ;-;
     //turns out becoming a madwoman at 4am about some geometry is NOT that great of an idea
 //credit to https://github.com/jiazegao/RCL-Tracking/tree/main
-\
+
 localisation::localisation(pros::Distance& left_sensor,pros::Distance& right_sensor,pros::Distance& back_sensor,pros::Distance& front_sensor,pros::Imu& imu)
     : Left_Sensor(left_sensor),Right_Sensor(right_sensor),Back_Sensor(back_sensor),Front_Sensor(front_sensor),imu(imu), background_task(background_update_process , this){
     imu.set_heading(0);
@@ -285,11 +282,19 @@ void localisation::update_sensors(sensor_data& data){
     data.x_gs = imu.get_accel().x;
     data.y_gs = imu.get_accel().y;
 }
+volatile bool lazy_switch = false;
+void start(){
+    lazy_switch = !lazy_switch;
+}
 void localisation::background_update_process(void* param) {
     localisation* self = static_cast<localisation*>(param);
 
     while(true) {
-        self->update();
-        pros::delay(pros::competition::is_autonomous() ? 40 : 500);
+        if(lazy_switch){
+            self->update();
+            pros::delay(pros::competition::is_autonomous() ? 40 : 500);
+        } else {
+            pros::delay(100);
+        }
     }
 }
