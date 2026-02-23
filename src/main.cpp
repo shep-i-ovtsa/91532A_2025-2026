@@ -8,11 +8,14 @@
 #include "pros/misc.h"
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"
+#include "ratatroller/menu.hpp"
+#include "ratatroller/ratatroller.hpp"
 #include "subsystems.hpp"
 #include "tasks.h"
 #include "timeMaster.hpp"
 #include <cmath>
 #include "mtp.hpp"
+#include "ratatroller/menu.hpp"
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
@@ -108,10 +111,8 @@ void initialize() {
   movement move(local);
 
 
-  pros::Task matchloader_task(matchloader_function);
   pros::Task descore_task(descore_function);
   pros::Task intake_task(intake_function);
-  pros::Task flip_detection_task(flip_detection_function);
   pros::Task time_keeper_task(time_keeper_proc);
   pros::Task center_score(center_score_function);
   master.rumble(chassis.drive_imu_calibrated() ? "." : "---");
@@ -283,7 +284,9 @@ void ez_template_extras() {
  */
 
 void opcontrol() {  
+  rat::ratatroller controller(rat::target::MASTER);
 
+  bool flip = false;
   //*
 
   //*
@@ -292,6 +295,34 @@ void opcontrol() {
 
   chassis.pid_tuner_disable();
   while (true) { 
+    float pitch = imu.get_pitch();
+    float accel_gs = imu.get_accel().z;
+
+    float g_norm = clamp(accel_gs / 1.0, 0.0, 1.0);
+    float tip_threshold = 40.0 - 11.5 * g_norm;
+
+    if (pitch > tip_threshold) {
+      flip = true;
+    }
+    else if (pitch < tip_threshold - 8) {   
+      flip = false;
+    }
+      if(!flip){
+      if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
+        hammerHead.set_value(true);
+      } else if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)){
+        hammerHead.set_value(false);
+      }
+      } else {
+        hammerHead.set_value(true);
+      }
+    if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)){
+      Descore.set_value(true);    }
+    else if(master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)){
+       Descore.set_value(false);
+    }
+  
+  
      
     //*
     

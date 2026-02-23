@@ -11,17 +11,17 @@
 
 namespace rat {
 
-enum class action : uint8_t {
-    NAV_UP,
-    NAV_DOWN,
-    NAV_LEFT,
-    NAV_RIGHT,
-    SELECT,
-    BACK,
-    COUNT
+enum class action : uint8_t { //add actions here
+    NAV_UP = 0,
+    NAV_DOWN = 1,
+    NAV_LEFT = 2,
+    NAV_RIGHT = 3,
+    SELECT = 4,
+    BACK = 5,
+    COUNT = 6 //amount of enums
 };
 
-enum class button : uint8_t {
+enum class button : uint8_t { 
     A     = pros::E_CONTROLLER_DIGITAL_A,
     B     = pros::E_CONTROLLER_DIGITAL_B,
     X     = pros::E_CONTROLLER_DIGITAL_X,
@@ -35,12 +35,11 @@ enum class button : uint8_t {
 class keybinds {
 public:
     keybinds(); 
-    void load_from_json(const std::string& path);
-
     button signal(action a) const;
     action resolve(button b) const;
     button find(pros::controller_digital_e_t raw) const;
-
+    pros::controller_digital_e_t to_pros(button b);
+    button from_pros(pros::controller_digital_e_t raw);
 private:
     static constexpr std::size_t action_count =
         static_cast<std::size_t>(action::COUNT);
