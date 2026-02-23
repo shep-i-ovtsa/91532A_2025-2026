@@ -2,9 +2,6 @@
 #include <cmath>
 #include "subsystems.hpp"
 
-// ==========================================================
-// Strategy Implementations
-// ==========================================================
 
 float forward_approach::compute_heading(
     float cx, float cy,
@@ -21,31 +18,24 @@ float backward_approach::compute_heading(
     return fmodf(angle + 180.0f, 360.0f);
 }
 
-// ==========================================================
-// Movement Constructor
-// ==========================================================
+
 
 movement::movement(localisation& loc) : loco(loc){
 }
 
-// ==========================================================
-// Public Movement Functions
-// ==========================================================
 
 void movement::move_to(const objective& target, approach_strategy& strategy){
     // Generate path
     current_path = create_path(target, strategy);
 
-    // Follow each link in order
+
     for (const auto& node : current_path) {
         follow_link(node);
     }
 
-    // Optional final orientation correction
+
     if (target.theta.has_value()) {
-        // TODO:
-        // chassis.set_turn_target(target.theta.value());
-        // chassis.wait_drive();
+        
     }
 }
 
