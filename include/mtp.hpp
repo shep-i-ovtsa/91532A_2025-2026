@@ -218,6 +218,10 @@ public:
         int y;
         float theta;
     };
+    struct path{
+        std::vector<movement::node>& contents;
+        path(std::vector<movement::node>& temp_path) : contents(temp_path){}
+    };
     int reconstruct_path(int goal_index);
     std::vector<movement::node> find_path(int sx, int sy, int gx, int gy);
     std::vector<movement::node> find_path(start st, waypoint way);
@@ -243,6 +247,8 @@ public:
     static localisation& loco;//position loop
 
     void follow_path(std::vector<node>& path);
+
+    movement();
 private:
  //i think ima go for an A* style alogrhythim that avoids allocating memory often
     static constexpr int W = horizontal_nodes;

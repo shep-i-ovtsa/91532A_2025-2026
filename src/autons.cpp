@@ -1,9 +1,11 @@
 #include <chrono>
 #include <thread>
 #include <vector>
+#include "localisation.hpp"
 #include "main.h"
 #include "pros/rtos.hpp"
 #include "subsystems.hpp"
+#include "mtp.hpp"
 
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
@@ -57,6 +59,20 @@ void default_constants() {
 ///
 // Drive Example
 ///
+void mtp_testing(){
+  localisation loco(left_sensor,right_sensor,back_sensor,front_sensor,imu);
+  movement movi;
+  movement::start st(loco.get_pose());
+  movement::waypoint center;
+  obstruction center_goal{1700,1900,1700,1900};
+  movi.add_obstruction(center_goal);
+  center.x = 1800;
+  center.y = 1800;
+  center.theta = 0;
+  std::vector<movement::node> path = movement().find_path(st, center);
+  movi.follow_path(path);
+  st.update();
+}
 void pid_auton(){
   chassis.pid_drive_set(24_in,127);
   chassis.pid_wait();
