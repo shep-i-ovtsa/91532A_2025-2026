@@ -1,126 +1,107 @@
 #ifndef LOCALISATION_HPP
 #define LOCALISATION_HPP
-//-----------------------------------------------------------
+
 #include "pros/device.hpp"
 #include "pros/distance.hpp"
 #include "pros/imu.hpp"
+#include <vector>
+#include <atomic>
+
 
 struct position {
 private:
-    float x_mm = 0;
-    float y_mm = 0; 
-    float theta_deg = 0.0; 
-    static int process_theta(int theta);
+    float x_mm = 0.0f;
+    float y_mm = 0.0f;
+    float theta_deg = 0.0f;
+    static int normalize_theta(int theta);
 public:
-    void set_pose(float new_x, float new_y, float new_theta);
+    void set_pose(float x, float y, float theta);
+    void set_x(float x){ x_mm = x; }
+    void set_y(float y){ y_mm = y; }
+    void set_theta(float t){ theta_deg = normalize_theta((int)t); }
 
-    void set_x(float x_mm){this -> x_mm = x_mm;}
-    void set_y(float y_mm){this -> y_mm = y_mm;}
-    float get_x() {return x_mm;}
-    float get_y() {return y_mm;}
-    float get_theta(){return theta_deg;}
-    void set_theta(float theta){this -> theta_deg = theta;}
+    float get_x() const { return x_mm; }
+    float get_y() const { return y_mm; }
+    float get_theta() const { return theta_deg; }
 };
+
+
 struct sensor_data {
-    int Left_Sensor_mm; //sensors return mms in integers
-    int left_confidence;
-    int Right_Sensor_mm;
-    int right_confidence;
-    int Back_Sensor_mm;
-    int back_confidence;
-    int Front_Sensor_mm;
-    int front_confidence;
-    float heading_deg;
-    float x_gs;
-    float y_gs;
-    float acceleration;
-};
-struct offsets {
-    int back;
-    int front;
-    int left;
-    int right; //!the cortex a9 is a 32 bit processor, optimise for 32 bit / 16 bit operations when possible!
-};
-struct obsticle { //! we represent obsticles as a rectangle in our calculations so we can account for interference with our sensors
-int x;
-int y;
-int radius; //todo add obstacle soft detection
-std::string name;
-};
-struct math_params{
-    float epsilon= 0.0001f;
-    void set_epsilon(float eps){epsilon =eps;}
-    float max_ray=5661.0f; //maximum possible field distance
-    void set_max_ray(float max){max_ray = max;}
-    float smoothing=0.25f; //smooting for position updates
-    void set_smoothing(float smooth){this -> smoothing = smooth;}
-    float min_sensor_mm = 50; //mimum sensor range to read
-    float max_sensor_mm = 2500; //v5 sensors are rated for 2.5m before they start returning absurd numbers like 9999
-    void set_sensor_params(int max, int min){min_sensor_mm = min; max_sensor_mm = max;}
+    int Front_Sensor_mm = 0;
+    int Back_Sensor_mm = 0;
+    int Left_Sensor_mm = 0;
+    int Right_Sensor_mm = 0;
 
-    float front_cred = 0.98; //how accurate is the sensor?
-    float back_cred = 0.96;
-    float left_cred = 0.98;
-    float right_cred = 0.97;
-    void adjust_cred(float front, float back, float left, float right){front_cred =front; back_cred = back; left_cred = left; right_cred = right;}
+    int front_conf = 0;
+    int back_conf = 0;
+    int left_conf = 0;
+    int right_conf = 0;
 
-    //maximum jump allowed before labeled as an outlier
-    float outlier_threshold_mm= 200.0f;
-    float obstacle_blend = 0.7f; //how much do we trust the know obstacle? 0.0 = fully trust - 1.0 NO TRUST ATALL no blending
-    void set_outlier_threshold(float threshold){outlier_threshold_mm = threshold;}
-    void set_blend(float blend){obstacle_blend = blend;}
+    int front_speed = 0; //detected speed
+    int back_speed = 0;
+    int left_speed = 0;
+    int right_speed = 0;
 
-    float accel_gain = 0.4f; //how much acceleration affects smoothing
-    float accel_max = 1.5f; //max gs under acceleration
-    float smoothing_max = 0.7f; //smoothing cap
-    void set_accel(float gain, float accel_max, float smoothing_max){accel_gain = gain; this -> accel_max = accel_max; this -> smoothing_max = smoothing_max;}
+    float heading_deg = 0;
+
+    float f_front = 0;
+    float f_back  = 0;
+    float f_left  = 0;
+    float f_right = 0;
 };
-struct trig_table{
-    private:
-    static float sin_table[360];
-    static float cos_table[360];
-    public:
-    float sin(int deg);
-    float cos(int deg);
-    trig_table();
-};
+
 class localisation {
 private:
-    pros::Task background_task;
-    position current_position;
-    offsets current_offset;
-    sensor_data current_sensor_data;   
 
-    pros::Distance& Left_Sensor;
-    pros::Distance& Right_Sensor;
-    pros::Distance& Back_Sensor;
-    pros::Distance& Front_Sensor;
+    pros::Task background_task;
+
+    position current_pose;
+    sensor_data real_sensors;
+
+    pros::Distance& left;
+    pros::Distance& right;
+    pros::Distance& back;
+    pros::Distance& front;
     pros::Imu& imu;
 
-    void update_position(float x_mm, float y_mm, float theta_deg);
-  
-    bool which_Sensor(float theta_deg);
-    void update_sensors(sensor_data& data);
-    
-    void triangulate_position(sensor_data& data);   
-    void triangulate_x();
-    void triangulate_y(); 
-    float motion_blur();
+    // --- grid reference ---
+    const uint8_t* grid = nullptr;
+    int grid_w = 0;
+    int grid_h = 0;
+    float resolution = 25.0f; // mm per cell
+
+    std::atomic<bool> running{false};
+
+    // velocity state
+    bool robot_moving = false;
+    bool dynamic_environment = false;
+
+    void update_real_sensors();
+    float simulate_ray(float x, float y, float theta_deg) const;
+    void simulate_sensors_at(float x, float y, float theta,
+                             sensor_data& predicted) const;
+    float pose_error(const sensor_data& predicted) const;
+    void correct_pose_local();
+
+    static void background_task_fn(void* param);
+
 public:
+
+    localisation(pros::Distance& l,
+                 pros::Distance& r,
+                 pros::Distance& b,
+                 pros::Distance& f,
+                 pros::Imu& imu);
+
+    void set_grid(const uint8_t* g, int w, int h, float res);
+    void set_pose(float x, float y, float theta);
+
     void start();
-    void set_start_position(int x_mm, int y_mm, int theta_deg);
-    std::vector<obsticle> known_obstacles; //hold onto know obstacles
-    std::vector<obsticle>& get_obsticles();
-    void add_obsticle(obsticle& obsticle);
-    void pop_obsticle();
-    math_params params;
-    static void background_update_process(void* param);
-    long get_horizontal_vision();
-    long get_vertical_vision();
-    void update();
-    localisation(pros::Distance& left_sensor, pros::Distance& right_sensor, pros::Distance& back_sensor, pros::Distance& front_sensor, pros::Imu& imu);
-    position& get_current_pose();
-    void set_offset(int back, int front, int left, int right);
-     //!passing distance sensor copies are EXPENSIVE, so we pass by reference so we pass references instead
+    void stop();
+    void update(); // manual update
+
+    position& get_pose();
+    sensor_data& get_real_sensors();
 };
-#endif 
+
+#endif
