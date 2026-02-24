@@ -9,8 +9,8 @@
 #include "pros/misc.h"
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"
-#include "ratatroller/menu.hpp"
-#include "ratatroller/ratatroller.hpp"
+
+
 #include "subsystems.hpp"
 #include "tasks.h"
 #include "timeMaster.hpp"
@@ -96,7 +96,6 @@ void initialize() {
 
   // ! Autonomous Selector using LLEMU
   ez::as::auton_selector.autons_add({
-
        {"qual left",awp_left},
       {"qual right",awp_right}, 
       {"STAY PUT BUT MOVE A BIT",wait}
@@ -107,11 +106,6 @@ void initialize() {
   chassis.imu.reset();
   chassis.initialize();
   ez::as::initialize();
-  localisation local(left_sensor , right_sensor , back_sensor , front_sensor , imu);
-  local.set_offset(150,150,125,125);
-  movement move(local);
-
-
   pros::Task descore_task(descore_function);
   pros::Task intake_task(intake_function);
   pros::Task time_keeper_task(time_keeper_proc);
@@ -286,7 +280,6 @@ void ez_template_extras() {
  */
 
 void opcontrol() {  
-  rat::ratatroller controller(rat::target::MASTER);
 
   bool flip = false;
   //*
