@@ -96,6 +96,7 @@ void initialize() {
 
   // ! Autonomous Selector using LLEMU
   ez::as::auton_selector.autons_add({
+    {"move to point testing",mtp_testing},
        {"qual left",awp_left},
       {"qual right",awp_right}, 
       {"STAY PUT BUT MOVE A BIT",wait}

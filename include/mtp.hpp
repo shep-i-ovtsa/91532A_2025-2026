@@ -179,21 +179,23 @@ class movement{
 
 public:
     static constexpr float ROBOT_RADIUS_MM = 200.0f; //we imagine the robot as a circle with outward rays
-    struct node{
+    struct node {
     public:
         int x = 0;
         int y = 0;
         float theta = 0;
-
         int pos_x = 0;
         int pos_y = 0;
+
+        node() : x(0), y(0), theta(0), pos_x(0), pos_y(0) {}
+
+        node(int x, int y) : x(x), y(y) {
+            find_world(res);
+        }
 
         void find_world(float resolution){
             pos_x = static_cast<int>((x*0.5f) * resolution);
             pos_y = static_cast<int>((y*0.5f) * resolution);
-        }
-        node(int x, int y) : x(x), y(y){
-            find_world(res);
         }
     };
     struct start{
@@ -201,8 +203,8 @@ public:
         int x = 0;
         int y = 0;
         float theta = 0;
-        position& pose;
-        start(position& pose) : pose(pose){
+        position pose;
+        start(position pose) : pose(pose){
             x = pose.get_x()/res;
             y = pose.get_y()/res;
             theta = pose.get_theta();
@@ -222,6 +224,7 @@ public:
         std::vector<movement::node>& contents;
         path(std::vector<movement::node>& temp_path) : contents(temp_path){}
     };
+    //movement();
     int reconstruct_path(int goal_index);
     std::vector<movement::node> find_path(int sx, int sy, int gx, int gy);
     std::vector<movement::node> find_path(start st, waypoint way);
@@ -244,17 +247,15 @@ public:
 
     std::array<node, max_path_length> current_path;
 
-    static localisation& loco;//position loop
+    explicit movement(localisation& l) : loco(l) {}
 
-    void follow_path(std::vector<node>& path);
-
-    movement();
+    void follow_path(std::vector<node>& path , ez::Drive chassis);
 private:
  //i think ima go for an A* style alogrhythim that avoids allocating memory often
     static constexpr int W = horizontal_nodes;
     static constexpr int H = vertical_nodes;
     static constexpr int N = W * H; //compress the index for speed
-
+    localisation& loco;
     struct SearchNode {
         int index;
         int f;

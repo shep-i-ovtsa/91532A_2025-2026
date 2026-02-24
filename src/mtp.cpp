@@ -1,8 +1,9 @@
 #include "mtp.hpp"
 #include <list>
+#include <vector>
 #include "localisation.hpp"
 #include "subsystems.hpp"
-
+#include "main.h"
 void movement::add_obstruction(obstruction obs){
 
     int inflate =
@@ -315,4 +316,31 @@ std::vector<movement::node> movement::find_path(int sx, int sy, waypoint way){
 
     // nochin
     return {};
+}
+float dist(float x, float y, float x2, float y2){
+    return(sqrt((x2-x)*(x2-x)) + (y2-y)*(y2-y));
+}
+void movement::follow_path(std::vector<node>& path , ez::Drive chassis) {
+    sensor_data data = loco.get_real_sensors();
+    for(int i = 0; i < path.size()-1; i++){
+        double turn_angle;
+        int drive_amount = dist(path[i].x,path[i].y,path[i+1].x,path[i+1].y);
+        int drive_speed = 70;
+        int turn_speed = 90;
+        switch(static_cast<int>(data.heading_deg)){
+            if(data.heading_deg >= 0 && data.heading_deg < 90){
+                turn_angle = acos(dist(path[i].x,0,path[i+1].x,0)/ drive_amount);
+            } else if(data.heading_deg >= 90 && data.heading_deg < 180) {
+                turn_angle = acos(dist(0,path[i].y,0,path[i+1].y)/ drive_amount);
+            }else if(data.heading_deg >= 180 && data.heading_deg < 270) {
+                turn_angle = acos(dist(path[i].x,0,path[i+1].x,0)/ drive_amount);
+            }else if(data.heading_deg >= 270 && data.heading_deg < 360) {
+                turn_angle = acos(dist(0,path[i].y,0,path[i+1].y)/ drive_amount);                
+            }
+        }
+        chassis.pid_turn_set(turn_angle,turn_speed);
+        chassis.pid_wait_quick_chain();
+        chassis.pid_drive_set(drive_amount,drive_speed);
+        chassis.pid_wait_quick_chain();
+    }
 }
