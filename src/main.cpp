@@ -15,9 +15,7 @@
 #include "tasks.h"
 #include "timeMaster.hpp"
 #include <cmath>
-#include "mtp.hpp"
-#include "ratatroller/menu.hpp"
-/////
+
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
 /////
@@ -98,8 +96,7 @@ void initialize() {
 
   // ! Autonomous Selector using LLEMU
   ez::as::auton_selector.autons_add({
-      {"tune drive",pid_auton},
-      {"tune turn",pid_turn_auton},
+
        {"qual left",awp_left},
       {"qual right",awp_right}, 
       {"STAY PUT BUT MOVE A BIT",wait}

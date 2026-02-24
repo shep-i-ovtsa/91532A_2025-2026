@@ -1,17 +1,68 @@
 #include "localisation.hpp"
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"
-#include "timeMaster.hpp"
 #include <cstdio>
+#include <cmath>
+#include <atomic>
+
 float trig_table::sin_table[360];
 float trig_table::cos_table[360];
+
 const float FIELD_WIDTH  = 3650.0f;
 const float FIELD_HEIGHT = 3650.0f;
 const float SMOOTH = 0.25f; //REMEMBER the f at the end tells the compiler to make the numebr a float. otherwise it defaults to doubles which take a whole extra cycle for compute
 
+static std::atomic<bool> lazy_switch{false};
 
 
 
+// ------------------------------------------------------------
+
+int position::process_theta(int theta) {
+    theta %= 360;
+    if (theta < 0) theta += 360;
+    return theta;
+}
+
+void position::set_pose(float new_x, float new_y, float new_theta) {
+    x_mm = new_x;
+    y_mm = new_y;
+    theta_deg = process_theta(static_cast<int>(new_theta));
+}
+
+
+
+// ------------------------------------------------------------
+
+trig_table::trig_table() {
+    static bool initialized = false;
+    if (!initialized) {
+        for (int i = 0; i < 360; ++i) {
+            float rad = i * (M_PI / 180.0f);
+            sin_table[i] = sinf(rad);
+            cos_table[i] = cosf(rad);
+        }
+        initialized = true;
+    }
+}
+
+float trig_table::sin(int deg) {
+    deg %= 360;
+    if (deg < 0) deg += 360;
+    return sin_table[deg];
+}
+
+float trig_table::cos(int deg) {
+    deg %= 360;
+    if (deg < 0) deg += 360;
+    return cos_table[deg];
+}
+
+static trig_table trig; //global sin and cos lookup table for speed >:3
+
+
+
+// ------------------------------------------------------------
 
 static float ray_to_wall_distance(
     float px, float py,
@@ -24,7 +75,6 @@ static float ray_to_wall_distance(
     if (fabsf(dx) > params.epsilon){ //!floating point plssss!! remmeber to avoid doubles for embedded programming. fabs is floating poitn abs
         float t1 = (0.0f - px) / dx;
         float t2 = (FIELD_WIDTH - px) / dx;
-
 
         if (t1 > 0 && t1 < t_min) t_min = t1;
         if (t2 > 0 && t2 < t_min) t_min = t2;
@@ -41,6 +91,7 @@ static float ray_to_wall_distance(
 
     return t_min;
 }
+
 static float ray_to_circle_distance(float px, float py,float dx, float dy,const obsticle& obsticle,float max_ray){
     float ox = px - (float)obsticle.x;
     float oy = py - (float)obsticle.y;
@@ -58,6 +109,7 @@ static float ray_to_circle_distance(float px, float py,float dx, float dy,const 
 
     return t;
 }
+
 float ray_to_nearest_obstacle(float px, float py,float dx, float dy,const std::vector<obsticle>& obstacles,math_params& params){
     float t_min = params.max_ray;
     for (const auto& o : obstacles) {
@@ -69,7 +121,49 @@ float ray_to_nearest_obstacle(float px, float py,float dx, float dy,const std::v
 
 
 
-static trig_table trig; //global sin and cos lookup table for speed >:3
+
+// ------------------------------------------------------------
+
+localisation::localisation(
+    pros::Distance& left_sensor,
+    pros::Distance& right_sensor,
+    pros::Distance& back_sensor,
+    pros::Distance& front_sensor,
+    pros::Imu& imu)
+    : Left_Sensor(left_sensor),
+      Right_Sensor(right_sensor),
+      Back_Sensor(back_sensor),
+      Front_Sensor(front_sensor),
+      imu(imu),
+      background_task(background_update_process , this)
+{
+    imu.set_heading(0);
+
+    while(imu.is_calibrating()) pros::delay(10);
+
+    set_offset(0, 0, 0, 0);
+}
+
+void localisation::set_start_position(int x, int y, int theta){
+    update_position(x,y,theta);
+}
+position& localisation::get_current_pose() {
+    return current_position;
+}
+void localisation::update_position(float x, float y, float theta){
+    current_position.set_pose(x, y, theta);
+}
+void localisation::update(){
+    update_sensors(current_sensor_data);
+    //triangulate_position(current_sensor_data);
+}
+
+void localisation::triangulate_position(sensor_data& data){
+    current_position.set_theta(data.heading_deg);
+
+    triangulate_x();
+    triangulate_y();
+}
 
 void localisation::triangulate_x() {
 
@@ -82,47 +176,46 @@ void localisation::triangulate_x() {
 
     float x_sum = 0.0f;
     float w_sum = 0.0f;
+    // RIGHT
+    if (fabsf(s) > params.epsilon) {
 
-    // FRONT
-    if (fabsf(c) > 0.5f) {  // only when mostly horizontal
-
-        float d = current_sensor_data.Front_Sensor_mm;
+        float d = current_sensor_data.Right_Sensor_mm;
 
         if (d > params.min_sensor_mm && d < params.max_sensor_mm) {
 
             float x_candidate;
 
-            if (c > 0)  // facing east
+            if (s > 0)   // facing north
                 x_candidate = FIELD_WIDTH - d;
-            else        // facing west
+            else
                 x_candidate = d;
 
-            float w = fabsf(c) *
-                      (current_sensor_data.front_confidence / 100.0f) *
-                      params.front_cred;
+            float w = fabsf(s) *
+                    (current_sensor_data.right_confidence / 100.0f) *
+                    params.right_cred;
 
             x_sum += x_candidate * w;
             w_sum += w;
         }
     }
 
-    // BACK
-    if (fabsf(c) > 0.5f) {
+    // LEFT
+    if (fabsf(s) > params.epsilon) {
 
-        float d = current_sensor_data.Back_Sensor_mm;
+        float d = current_sensor_data.Left_Sensor_mm;
 
         if (d > params.min_sensor_mm && d < params.max_sensor_mm) {
 
             float x_candidate;
 
-            if (c > 0)
+            if (s > 0)
                 x_candidate = d;
             else
                 x_candidate = FIELD_WIDTH - d;
 
-            float w = fabsf(c) *
-                      (current_sensor_data.back_confidence / 100.0f) *
-                      params.back_cred;
+            float w = fabsf(s) *
+                    (current_sensor_data.left_confidence / 100.0f) *
+                    params.left_cred;
 
             x_sum += x_candidate * w;
             w_sum += w;
@@ -136,7 +229,6 @@ void localisation::triangulate_x() {
 
         float alpha = params.smoothing;
 
-        // optional: adaptive smoothing from acceleration
         float accel_mag = sqrtf(
             current_sensor_data.x_gs * current_sensor_data.x_gs +
             current_sensor_data.y_gs * current_sensor_data.y_gs
@@ -156,55 +248,51 @@ void localisation::triangulate_x() {
 void localisation::triangulate_y() {
 
     int theta = current_position.get_theta();
-    float c = trig.cos(theta);
     float s = trig.sin(theta);
-
-    float px = current_position.get_x();
-    float py = current_position.get_y();
 
     float y_sum = 0.0f;
     float w_sum = 0.0f;
 
-    // RIGHT
-    if (fabsf(s) > 0.5f) {
+    // FRONT
+    if (fabsf(s) > params.epsilon) {
 
-        float d = current_sensor_data.Right_Sensor_mm;
+        float d = current_sensor_data.Front_Sensor_mm;
 
         if (d > params.min_sensor_mm && d < params.max_sensor_mm) {
 
             float y_candidate;
 
-            if (s > 0)   // facing north
-                y_candidate = d;
-            else
+            if (s > 0)  // facing north
                 y_candidate = FIELD_HEIGHT - d;
+            else        // facing south
+                y_candidate = d;
 
             float w = fabsf(s) *
-                      (current_sensor_data.right_confidence / 100.0f) *
-                      params.right_cred;
+                      (current_sensor_data.front_confidence / 100.0f) *
+                      params.front_cred;
 
             y_sum += y_candidate * w;
             w_sum += w;
         }
     }
 
-    // LEFT
-    if (fabsf(s) > 0.5f) {
+    // BACK
+    if (fabsf(s) > params.epsilon) {
 
-        float d = current_sensor_data.Left_Sensor_mm;
+        float d = current_sensor_data.Back_Sensor_mm;
 
         if (d > params.min_sensor_mm && d < params.max_sensor_mm) {
 
             float y_candidate;
 
             if (s > 0)
-                y_candidate = FIELD_HEIGHT - d;
-            else
                 y_candidate = d;
+            else
+                y_candidate = FIELD_HEIGHT - d;
 
             float w = fabsf(s) *
-                      (current_sensor_data.left_confidence / 100.0f) *
-                      params.left_cred;
+                      (current_sensor_data.back_confidence / 100.0f) *
+                      params.back_cred;
 
             y_sum += y_candidate * w;
             w_sum += w;
@@ -217,41 +305,13 @@ void localisation::triangulate_y() {
 
         float alpha = params.smoothing;
 
-        float accel_mag = sqrtf(
-            current_sensor_data.x_gs * current_sensor_data.x_gs +
-            current_sensor_data.y_gs * current_sensor_data.y_gs
-        );
-
-        float accel_factor = fminf(accel_mag / params.accel_max, 1.0f);
-        alpha += accel_factor * params.accel_gain;
-        alpha = fminf(alpha, params.smoothing_max);
-
         float y_filtered = alpha * y_est + (1.0f - alpha) * y_prev;
 
-        current_position.set_y(y_filtered);    
+        current_position.set_y(y_filtered);
     }
 } //stole some math from theese guys :p and fixed our feedback loop ;-;
     //turns out becoming a madwoman at 4am about some geometry is NOT that great of an idea
 //credit to https://github.com/jiazegao/RCL-Tracking/tree/main
-
-localisation::localisation(pros::Distance& left_sensor,pros::Distance& right_sensor,pros::Distance& back_sensor,pros::Distance& front_sensor,pros::Imu& imu)
-    : Left_Sensor(left_sensor),Right_Sensor(right_sensor),Back_Sensor(back_sensor),Front_Sensor(front_sensor),imu(imu), background_task(background_update_process , this){
-    imu.set_heading(0);
-
-    while(imu.is_calibrating()) pros::delay(10);
-    set_offset(0, 0, 0, 0);
-}
-void localisation::set_start_position(int x, int y, int theta){
-    update_position(x,y,theta);
-}
-position& localisation::get_current_pose() {
-    return current_position;
-}
-
-void localisation::update(){
-    triangulate_position();
-
-}
 
 void localisation::set_offset(int back, int front, int left, int right){
     offsets offset;
@@ -263,12 +323,17 @@ void localisation::set_offset(int back, int front, int left, int right){
 }
 
 long localisation::get_horizontal_vision(){
-    return (long)(((current_sensor_data.Left_Sensor_mm +current_sensor_data.Right_Sensor_mm) /FIELD_WIDTH) * 100.0);
+    float total = (float)current_sensor_data.Left_Sensor_mm +
+                  (float)current_sensor_data.Right_Sensor_mm;
+    return (long)((total / FIELD_WIDTH) * 100.0f);
 }
 
 long localisation::get_vertical_vision(){
-    return (long)(((current_sensor_data.Back_Sensor_mm +current_sensor_data.Front_Sensor_mm) /FIELD_HEIGHT) * 100.0);
+    float total = (float)current_sensor_data.Back_Sensor_mm +
+                  (float)current_sensor_data.Front_Sensor_mm;
+    return (long)((total / FIELD_HEIGHT) * 100.0f);
 }
+
 void localisation::update_sensors(sensor_data& data){
     data.Left_Sensor_mm = Left_Sensor.get() + current_offset.left; 
     data.left_confidence = Left_Sensor.get_confidence();
@@ -282,15 +347,16 @@ void localisation::update_sensors(sensor_data& data){
     data.x_gs = imu.get_accel().x;
     data.y_gs = imu.get_accel().y;
 }
-volatile bool lazy_switch = false;
-void start(){
+
+void localisation::start(){
     lazy_switch = !lazy_switch;
 }
+
 void localisation::background_update_process(void* param) {
     localisation* self = static_cast<localisation*>(param);
 
     while(true) {
-        if(lazy_switch){
+        if(lazy_switch.load()){
             self->update();
             pros::delay(pros::competition::is_autonomous() ? 40 : 500);
         } else {

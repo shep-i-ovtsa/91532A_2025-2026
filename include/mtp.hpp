@@ -1,65 +1,59 @@
 #ifndef MTP_HPP
 #define MTP_HPP
-
-#include <vector>
-#include <optional>
-#include <string>
 #include "localisation.hpp"
-
-
-struct objective {
-    float x;
-    float y;
-    std::optional<float> theta;
-    std::string name;
-
-    void (*interact)() = nullptr;
-
-    void set_interact_behavior(void (*fn)()) {
-        interact = fn;
-    }
-};
-struct link{
-    float x_mm;
-    float y_mm;
-    std::optional<float> theta;
-};
-
-class approach_strategy {
+#include <list>
+struct obstruction{
 public:
-    virtual float compute_heading( float current_x, float current_y, float target_x, float target_y) = 0;
-
-    virtual ~approach_strategy() = default; //c++'s weird version of an abstract class
+    int x;
+    int x2;
+    int y;
+    int y2;
 };
-class forward_approach : public approach_strategy { //in java terms pretty much this is its version of public class forward_approach extends approach_strategy
+struct node{
 public:
-    float compute_heading(float cx, float cy, float tx, float ty) override; //! @overide compute_heading();
+    int x;
+    int y;
+    int theta;
+    float pos_x;
+    float pos_y;
 };
-class backward_approach :public approach_strategy {
+struct check_point{
 public:
-    float compute_heading(float cx, float cy, float tx, float ty) override; //? lowk not used to using c++s abstract methods but i think im translating right
+    int left_read;
+    int right_read;
+    int back_read;
+    int front_read;
+    float theta;
 };
+class movement{
 
-class movement {
 public:
-    movement(localisation& loc);
 
-    void move_to(const objective& target, approach_strategy& strategy); //only move to the target in the specified way
-
-    void move_to_interact(const objective& target, approach_strategy& strategy);//move to the target in its specified way but call the interact function
-
-    void move_to(int x, int y, int theta); //move to the coordinates
-
+    movement();
+    static constexpr float FIELD_WIDTH = 3860.0;
+    static constexpr float FIELD_HEIGHT = 3860.0;
+    static constexpr float res = 50.0; //change this for higher resolution
+    //! in mms btw
+    void add_obstruction(obstruction obs);    
+    int horizontal_nodes = FIELD_WIDTH /res;
+    int vertical_nodes = FIELD_HEIGHT /res;
 private:
-    std::vector<link> create_path(const objective& target, approach_strategy& strategy);
-    void follow_link(const link& next);
-    localisation& loco;
-    std::vector<link> current_path;
+    node node_list[static_cast<int>(FIELD_WIDTH/res)][static_cast<int>(FIELD_WIDTH/res)];
+    localisation loco;
 
-    float compute_distance(float x1, float y1, float x2, float y2);
-
-    void obstacle_adjust(float& heading, float cx, float cy);
-    //todo find a convenient way to set speed
 };
-
 #endif
+/*
+//* 1:get from one point to another
+//* A:split the field into nodes by resoultion
+//        -How do we split the field into resolution?
+//        -1:We can take the field dimmensions and divide them by res
+//s            take those leftover points and turn them into nodes
+//    B:store nodes in a list to be iterated over
+//        -just use a list and a set of field coordinates depending on res;
+        -remove obscured nodes from the list to avoid including in list
+
+//* C:Drive from node to node
+    feed our nodes to an a* algorythim and feed that back into a movement chain
+    follow the movement chain between nodes to find the fastest route
+*/
