@@ -241,7 +241,7 @@ public:
     static constexpr int vertical_nodes =
         static_cast<int>(FIELD_HEIGHT / res);
 
-    static constexpr int max_path_length = 800;
+    static constexpr int max_path_length = 600;
 
     void add_obstruction(obstruction obs);
 
@@ -268,7 +268,7 @@ private:
     SearchNode open_heap[N];
     int heap_size = 0;
     // 0:free, 1:blocked
-    uint8_t da_grid[vertical_nodes][horizontal_nodes] = {};
+    uint16_t da_grid[vertical_nodes][horizontal_nodes] = {};
 
 
     inline int to_index(int x, int y) const {
