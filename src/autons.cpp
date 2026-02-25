@@ -61,13 +61,15 @@ void default_constants() {
 ///
 void mtp_testing(){
   localisation loco(left_sensor,right_sensor,back_sensor,front_sensor,imu);
+  loco.start();
   movement movi(loco);
+  
   movement::start st(loco.get_pose());
   movement::waypoint center;
-  obstruction center_goal{1700,1900,1700,1900};
+  obstruction center_goal{50,70,40,60};
   movi.add_obstruction(center_goal);
-  center.x = 1500;
-  center.y = 1500;
+  center.x = 60;
+  center.y = 35;
   center.theta = 0;
   std::vector<movement::node> path = movi.find_path(st, center);
   movi.follow_path(path,chassis);

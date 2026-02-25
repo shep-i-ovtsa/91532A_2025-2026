@@ -33,8 +33,8 @@ localisation::localisation(
     pros::Distance& f,
     pros::Imu& imu_)
     : left(l), right(r), back(b), front(f), imu(imu_),
-      background_task(background_task_fn, this)
-{
+        correction_confidence(CORR_LOW),
+        background_task(background_task_fn, this){
     imu.set_heading(0);
     while(imu.is_calibrating()) pros::delay(10);
 }
@@ -178,10 +178,13 @@ float localisation::pose_error(const sensor_data& predicted) const{
 
 void localisation::correct_pose_local(){
 
-    if(robot_moving || dynamic_environment) return;
+    if(robot_moving || dynamic_environment) {
+        correction_confidence = CORR_LOW;
+        return;
+    }
 
-    float base_x = current_pose.get_x();
-    float base_y = current_pose.get_y();
+    float base_x = predicted_pose.get_x();
+    float base_y = predicted_pose.get_y();
     float base_t = real_sensors.heading_deg;
 
     float best_x = base_x;
@@ -210,7 +213,7 @@ void localisation::correct_pose_local(){
                         float test_y = best_y + dy;
                         float test_t = best_t + dt;
 
-                        simulate_sensors_at(test_x, test_y,test_t, predicted);
+                        simulate_sensors_at(test_x, test_y, test_t, predicted);
                         float err = pose_error(predicted);
 
                         if(err < best_error){
@@ -225,16 +228,42 @@ void localisation::correct_pose_local(){
         }
     }
 
-    if(best_error < CORRECTION_ACCEPT){
-        current_pose.set_pose(best_x, best_y, best_t);
+    if(best_error < CORRECTION_ACCEPT) {
+        estimated_pose.set_pose(best_x, best_y, best_t);
+        correction_confidence = CORR_HIGH;
+    } else {
+        correction_confidence = CORR_LOW;
     }
 }
 
 void localisation::update(){
+
     update_real_sensors();
     correct_pose_local();
-}
 
+
+    if(correction_confidence == CORR_HIGH){
+
+        float px = predicted_pose.get_x();
+        float py = predicted_pose.get_y();
+        float pt = predicted_pose.get_theta();
+
+        float ex = estimated_pose.get_x();
+        float ey = estimated_pose.get_y();
+        float et = estimated_pose.get_theta();
+
+        float weight = 0.7f;  
+
+        float fx = weight * ex + (1.0f - weight) * px;
+        float fy = weight * ey + (1.0f - weight) * py;
+        float ft = weight * et + (1.0f - weight) * pt;
+
+        fused_pose.set_pose(fx, fy, ft);
+    }
+    else{
+        fused_pose = predicted_pose;
+    }
+}
 void localisation::background_task_fn(void* param){
     localisation* self = static_cast<localisation*>(param);
 
@@ -257,7 +286,15 @@ void localisation::stop(){
 }
 
 position& localisation::get_pose(){
-    return current_pose;
+    return fused_pose;
+}
+
+position& localisation::get_predicted_pose(){
+    return predicted_pose;
+}
+
+position& localisation::get_estimated_pose(){
+    return estimated_pose;
 }
 
 sensor_data& localisation::get_real_sensors(){
@@ -265,5 +302,6 @@ sensor_data& localisation::get_real_sensors(){
 }
 
 void localisation::set_pose(float x, float y, float theta){
-    current_pose.set_pose(x,y,theta);
+    predicted_pose.set_pose(x, y, theta);
+    fused_pose.set_pose(x, y, theta);
 }
