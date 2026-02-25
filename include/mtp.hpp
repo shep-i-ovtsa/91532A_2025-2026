@@ -133,7 +133,6 @@ public:
 
     int best_error = INT_MAX;
 
-    // Multi-resolution search (coarse → fine)
     const int pos_steps[3] = {50, 25, 5}; //if we cant find something at one resolution, check a higher one
     const int ang_steps[3] = {5, 3, 1};// same thing but for angle, helps with imu bias
 
@@ -194,8 +193,8 @@ public:
         }
 
         void find_world(float resolution){
-            pos_x = static_cast<int>((x*0.5f) * resolution);
-            pos_y = static_cast<int>((y*0.5f) * resolution);
+            pos_x = static_cast<int>(x * resolution);
+            pos_y = static_cast<int>(y * resolution);
         }
     };
     struct start{
@@ -261,14 +260,14 @@ private:
         int f;
     };
 
-    int g_cost[N];
-    int parent[N];
-    bool closed[N];
+    static uint16_t g_cost[N];
+    static uint16_t parent[N];
+    static bool closed[N];
 
-    SearchNode open_heap[N];
+    static SearchNode open_heap[N];
     int heap_size = 0;
     // 0:free, 1:blocked
-    uint8_t da_grid[vertical_nodes][horizontal_nodes] = {};
+    static uint8_t da_grid[vertical_nodes][horizontal_nodes];
 
 
     inline int to_index(int x, int y) const {
@@ -280,7 +279,9 @@ private:
         x = index % W;
     }
     inline int heuristic(int x1, int y1, int x2, int y2) const {
-        return abs(x1 - x2) + abs(y1 - y2); //distance between two points
+        int dx = abs(x1 - x2);
+        int dy = abs(y1 - y2);
+        return 10 * (dx + dy) + (14 - 20) * std::min(dx, dy);
     }
     void heap_push(int index, int f) {
         int i = heap_size++;

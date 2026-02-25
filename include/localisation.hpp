@@ -55,7 +55,12 @@ private:
 
     pros::Task background_task;
 
-    position current_pose;
+    position predicted_pose;
+    position estimated_pose;
+    position fused_pose;
+
+
+
     sensor_data real_sensors;
 
     pros::Distance& left;
@@ -64,7 +69,6 @@ private:
     pros::Distance& front;
     pros::Imu& imu;
 
-    // --- grid reference ---
     const uint8_t* grid = nullptr;
     int grid_w = 0;
     int grid_h = 0;
@@ -72,7 +76,6 @@ private:
 
     std::atomic<bool> running{false};
 
-    // velocity state
     bool robot_moving = false;
     bool dynamic_environment = false;
 
@@ -86,7 +89,11 @@ private:
     static void background_task_fn(void* param);
 
 public:
-
+    enum CorrectionState : uint8_t{ 
+        CORR_LOW = 0, 
+        CORR_HIGH = 1 
+    };    
+    CorrectionState correction_confidence; 
     localisation(pros::Distance& l,
                  pros::Distance& r,
                  pros::Distance& b,
@@ -100,8 +107,12 @@ public:
     void stop();
     void update(); // manual update
 
-    position& get_pose();
-    sensor_data& get_real_sensors();
+position& get_pose();
+
+position& get_predicted_pose();
+
+position& get_estimated_pose();
+sensor_data& get_real_sensors();
 };
 
 #endif
